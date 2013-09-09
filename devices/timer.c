@@ -30,6 +30,24 @@ static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
 
+/* NEW FUNCTION */
+/* This function is called after every clock interrupt. It reduces the
+ * thread ticks if the thread is blocked. When the thread's ticks becomes
+ * zero, it unblocks that thread. */
+void
+reduce_thread_ticks (struct thread *t, void *aux)
+{
+  (void) aux;
+  if(t->status != THREAD_BLOCKED || t->ticks_left < 0)
+      return;
+  
+  --t->ticks_left;
+  if(t->ticks_left == 0) {
+      t->ticks_left = -1;
+      thread_unblock (t);
+  }
+}
+
 /* Sets up the timer to interrupt TIMER_FREQ times per second,
    and registers the corresponding interrupt. */
 void
@@ -89,11 +107,26 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
+/* OLD CODE.
   int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
   while (timer_elapsed (start) < ticks) 
     thread_yield ();
+*/
+
+  /* Gets the current thread and assigns ticks to current ticks.
+   * It goes on to block the current thread.
+   */
+  if(ticks <= 0)
+      return;
+
+  ASSERT (intr_get_level () == INTR_ON);
+  struct thread *curr = thread_current ();
+  curr->ticks_left = ticks;
+  intr_disable ();
+  thread_block ();
+  intr_enable ();
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -172,6 +205,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
+  thread_foreach (reduce_thread_ticks, 0);
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

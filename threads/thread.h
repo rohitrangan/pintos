@@ -97,6 +97,9 @@ struct thread
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
 #endif
+    
+    /* NEW - Storing number of ticks left for thread to be unblocked. */
+    int64_t ticks_left;
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
