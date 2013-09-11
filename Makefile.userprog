@@ -38,10 +38,11 @@ endef
 
 $(foreach prog,$(PROGS),$(eval $(call TEMPLATE,$(prog))))
 
+# ROHITRANGAN - MODIFIED STATEMENTS.
 libc.a: $(LIB_OBJ)
 	rm -f $@
-	ar r $@ $^
-	ranlib $@
+	$(AR) r $@ $^
+	$(RANLIB) $@
 
 clean::
 	rm -f $(PROGS) $(PROGS_OBJ) $(PROGS_DEP)
